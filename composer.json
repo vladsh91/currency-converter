@@ -7,14 +7,17 @@
         "php": ">=8.2",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "beberlei/assert": "*",
+        "cuyz/valinor": "^2.0",
+        "symfony/cache": "7.3.*",
         "symfony/console": "7.3.*",
         "symfony/dotenv": "7.3.*",
+        "symfony/filesystem": "7.3.*",
         "symfony/flex": "^2",
         "symfony/framework-bundle": "7.3.*",
+        "symfony/http-client": "7.3.*",
         "symfony/runtime": "7.3.*",
         "symfony/yaml": "7.3.*"
-    },
-    "require-dev": {
     },
     "config": {
         "allow-plugins": {
@@ -55,7 +58,13 @@
         ],
         "post-update-cmd": [
             "@auto-scripts"
-        ]
+        ],
+        "start": "podman-compose up -d --build",
+        "connect": [
+            "Composer\\Config::disableProcessTimeout",
+            "podman exec -it converter sh"
+        ],
+        "stop": "podman-compose down"
     },
     "conflict": {
         "symfony/symfony": "*"

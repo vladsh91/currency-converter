@@ -1,12 +1,14 @@
 # see https://symfony.com/doc/current/reference/configuration/framework.html
 framework:
     secret: '%env(APP_SECRET)%'
+    session: false
 
-    # Note that the session will be started ONLY if you read or write from it.
-    session: true
-
-    #esi: true
-    #fragments: true
+    http_client:
+        scoped_clients:
+            coinpaprika.client:
+                base_uri: '%env(COINPAPRIKA_BASE_URL)%'
+            floatrates.client:
+                base_uri: '%env(FLOATRATES_BASE_URL)%'
 
 when@test:
     framework:

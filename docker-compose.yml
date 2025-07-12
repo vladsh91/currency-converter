@@ -1,0 +1,12 @@
+services:
+
+    cli:
+        tty: true
+        command:
+            - sh
+        container_name: converter
+        build:
+            context: .
+            dockerfile: Dockerfile
+        volumes:
+            - ./:/app:z
