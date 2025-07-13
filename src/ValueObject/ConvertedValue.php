@@ -12,11 +12,11 @@ final readonly class ConvertedValue
         public Rate $rate,
         public float $amount,
     ) {
-        Assert::that($this->amount)->min(0);
+        Assert::that($this->amount)->min(0, 'Amount can\'t be negative. Got "%s".');
     }
 
-    public static function fromRateAndAmount(Rate $rate, float $amount): self
+    public static function fromRateAndOriginAmount(Rate $rate, float $originAmount): self
     {
-        return new ConvertedValue($rate, $amount);
+        return new ConvertedValue($rate, \round($originAmount * $rate->rate, precision: 2));
     }
 }

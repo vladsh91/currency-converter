@@ -10,3 +10,6 @@ services:
             dockerfile: Dockerfile
         volumes:
             - ./:/app:z
+        environment:
+            COINPAPRIKA_BASE_URL: https://api.coinpaprika.com/
+            FLOATRATES_BASE_URL: https://www.floatrates.com/

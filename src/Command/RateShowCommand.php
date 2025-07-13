@@ -12,6 +12,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(name: 'app:rate:show')]
 final class RateShowCommand extends Command
@@ -21,6 +22,8 @@ final class RateShowCommand extends Command
 
     private Currency $currency;
 
+    private SymfonyStyle $io;
+
     public function __construct(
         private readonly RateQuery $rateQuery,
     ) {
@@ -29,7 +32,11 @@ final class RateShowCommand extends Command
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
-        $this->currency = Currency::fromString($input->getOption(self::OPTION_CURRENCY) ?? self::DEFAULT_CURRENCY);
+        $this->io = new SymfonyStyle($input, $output);
+
+        $this->currency = Currency::fromString(
+            $input->getOption(self::OPTION_CURRENCY) ?? self::DEFAULT_CURRENCY,
+        );
     }
 
     protected function configure(): void
@@ -47,7 +54,7 @@ final class RateShowCommand extends Command
             $this->rateQuery->all($this->currency),
         );
 
-        echo \json_encode(\array_values($rates), flags: JSON_PRETTY_PRINT) . PHP_EOL;
+        $this->io->writeln(\json_encode(\array_values($rates), flags: JSON_PRETTY_PRINT));
 
         return Command::SUCCESS;
     }

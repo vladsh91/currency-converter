@@ -24,7 +24,7 @@ final readonly class Converter
             return null;
         }
 
-        return ConvertedValue::fromRateAndAmount($rate, \round($amount * $rate->rate, precision: 2));
+        return ConvertedValue::fromRateAndOriginAmount($rate, $amount);
     }
 }
 

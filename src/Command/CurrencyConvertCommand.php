@@ -12,8 +12,9 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'app:currency:convert')]
+#[AsCommand(name: 'app:currency:convert', description: 'Convert value to a different currency')]
 final class CurrencyConvertCommand extends Command
 {
     private const string OPTION_FROM_CURRENCY = 'from-currency';
@@ -24,6 +25,8 @@ final class CurrencyConvertCommand extends Command
     private Currency $toCurrency;
     private float $amount;
 
+    private SymfonyStyle $io;
+
     public function __construct(
         private readonly Converter $converter,
     ) {
@@ -32,20 +35,24 @@ final class CurrencyConvertCommand extends Command
 
     protected function initialize(InputInterface $input, OutputInterface $output): void
     {
+        $this->io = new SymfonyStyle($input, $output);
+
         $fromCurrency = $input->getOption(self::OPTION_FROM_CURRENCY);
         $toCurrency = $input->getOption(self::OPTION_TO_CURRENCY);
         $amount = $input->getArgument(self::ARGUMENT_AMOUNT);
 
         if (empty($fromCurrency)) {
-            throw new \InvalidArgumentException(\sprintf('--%s is invalid.', self::OPTION_FROM_CURRENCY));
+            throw new \InvalidArgumentException(\sprintf('--%s is not provided.', self::OPTION_FROM_CURRENCY));
         }
 
         if (empty($toCurrency)) {
-            throw new \InvalidArgumentException(\sprintf('--%s is invalid.', self::OPTION_TO_CURRENCY));
+            throw new \InvalidArgumentException(\sprintf('--%s is not provided.', self::OPTION_TO_CURRENCY));
         }
 
         if (empty($amount) || !\is_numeric($amount)) {
-            throw new \InvalidArgumentException(\sprintf('<%s> is invalid.', self::ARGUMENT_AMOUNT));
+            throw new \InvalidArgumentException(
+                \sprintf('<%s> is not provided or invalid.', self::ARGUMENT_AMOUNT),
+            );
         }
 
         $this->fromCurrency = Currency::fromString($fromCurrency);
@@ -69,16 +76,16 @@ final class CurrencyConvertCommand extends Command
         );
 
         if ($convertedAmount === null) {
-            $output->writeln(\sprintf(
-                '%s/%s rate was not found.',
+            $this->io->error(\sprintf(
+                'Cannot convert value because %s/%s rate is not available.',
                 $this->fromCurrency->value,
                 $this->toCurrency->value,
             ));
 
-            return Command::SUCCESS;
+            return Command::FAILURE;
         }
 
-        echo \json_encode([
+        $this->io->writeln(\json_encode([
             'amount' => $convertedAmount->amount,
             'currency_from' => [
                 'rate' => $convertedAmount->rate->inverseRate,
@@ -88,7 +95,7 @@ final class CurrencyConvertCommand extends Command
                 'rate' => 1,
                 'code' => $convertedAmount->rate->toCurrency->value,
             ],
-        ], flags: JSON_PRETTY_PRINT) . PHP_EOL;
+        ], flags: JSON_PRETTY_PRINT));
 
         return Command::SUCCESS;
     }

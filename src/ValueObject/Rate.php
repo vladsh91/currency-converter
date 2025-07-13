@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\ValueObject;
 
+use App\Dto\Coinpaprika\CurrencyQuoteDto;
 use App\Dto\Coinpaprika\MarketDto;
 use App\Dto\Floatrates\CurrencyRateDto;
 use Assert\Assert;
@@ -16,43 +17,29 @@ final readonly class Rate
         public float $rate,
         public float $inverseRate,
     ) {
-        Assert::that($this->rate)->min(0);
-        Assert::that($this->inverseRate)->min(0);
+        Assert::that($this->rate)->min(0, 'Rate can\'t be negative. Got "%s".');
+        Assert::that($this->inverseRate)->min(0, 'Inverse rate can\'t be negative. Got "%s".');
     }
 
-    public static function fromCoinpaprikaMarket(MarketDto $quote, Currency $toCurrency): Rate
+    public static function fromCoinpaprikaMarket(MarketDto $market, Currency $toCurrency): Rate
     {
-        if (!isset($quote->quotes[$toCurrency->value])) {
-            throw new \InvalidArgumentException(
-                \sprintf('Quote does not contain a rate for base currency "%s"',
-                $toCurrency->value,
-            ));
-        }
-
-        $currencyQuote = $quote->quotes[$toCurrency->value];
+        $currencyQuote = self::validateCurrencyQuote($market, $toCurrency);
 
         return new Rate(
-            $quote->pairBaseCurrency,
-            $quote->pairQuoteCurrency,
+            fromCurrency: $market->pairBaseCurrency,
+            toCurrency: $market->pairQuoteCurrency,
             rate: $currencyQuote->price,
             inverseRate: 1 / $currencyQuote->price,
         );
     }
 
-    public static function fromCoinpaprikaMarketInverseRate(MarketDto $quote, Currency $fromCurrency): Rate
+    public static function fromCoinpaprikaMarketInverseRate(MarketDto $market, Currency $fromCurrency): Rate
     {
-        if (!isset($quote->quotes[$fromCurrency->value])) {
-            throw new \InvalidArgumentException(
-                \sprintf('Quote does not contain a rate for base currency "%s"',
-                    $fromCurrency->value,
-                ));
-        }
-
-        $currencyQuote = $quote->quotes[$fromCurrency->value];
+        $currencyQuote = self::validateCurrencyQuote($market, $fromCurrency);
 
         return new Rate(
-            $quote->pairQuoteCurrency,
-            $quote->pairBaseCurrency,
+            fromCurrency: $market->pairQuoteCurrency,
+            toCurrency: $market->pairBaseCurrency,
             rate: 1 / $currencyQuote->price,
             inverseRate: $currencyQuote->price,
         );
@@ -61,10 +48,21 @@ final readonly class Rate
     public static function fromFloatratesRate(CurrencyRateDto $rate, Currency $fromCurrency): Rate
     {
         return new Rate(
-            $fromCurrency,
-            $rate->toCurrency,
+            fromCurrency: $fromCurrency,
+            toCurrency: $rate->toCurrency,
             rate: $rate->rate,
             inverseRate: $rate->inverseRate,
         );
+    }
+
+    private static function validateCurrencyQuote(MarketDto $market, Currency $currency): CurrencyQuoteDto
+    {
+        if (!isset($market->quotes[$currency->value])) {
+            throw new \InvalidArgumentException(
+                \sprintf('Market "%s" does not contain quote for "%s" currency.', $market->pair, $currency->value),
+            );
+        }
+
+        return $market->quotes[$currency->value];
     }
 }

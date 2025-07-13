@@ -18,6 +18,7 @@ final readonly class CoinpaprikaCoinbaseMarketRepository
     use ResponseTransformerTrait;
 
     private const string URL_PATH_EXCHANGES_MARKETS = '/v1/exchanges/coinbase/markets';
+    private const string QUOTE_SEPARATOR = ',';
 
     public function __construct(
         private HttpClientInterface $coinpaprikaClient,
@@ -33,7 +34,7 @@ final readonly class CoinpaprikaCoinbaseMarketRepository
     public function getMarketsWithCurrencyQuotes(array $quoteCurrencies): array
     {
         $quoteValues = \implode(
-            ',',
+            self::QUOTE_SEPARATOR,
             \array_map(static fn (Currency $currency) => $currency->value, $quoteCurrencies),
         );
 

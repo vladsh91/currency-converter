@@ -1,41 +1,52 @@
-This project provides 2 commands to convert one currency value into another one and to show currency rates.
+# Currency Converter
+
+This project provides two commands to convert currency values and display exchange rates.
 
 The following APIs are used:
 
-- Coinpaprika: https://api.coinpaprika.com/v1/exchanges/coinbase/markets?quotes=USD - provides market data from coinbase exchange, we can request quotes for specific markets/pairs
-- Floatrates: https://www.floatrates.com/daily/usd.json - provides currency rates for general currencies
+APIs used:
+
+- **Coinpaprika**: `https://api.coinpaprika.com/v1/exchanges/coinbase/markets?quotes=USD`  
+  Provides cryptocurrency market data from Coinbase (with USD quote in this example).
+- **Floatrates**: `https://www.floatrates.com/daily/usd.json`  
+  Provides exchange rates for fiat currencies (relative to USD in this example).
 
 ## Requirements
 
 - PHP
 - Composer
-- docker
-- docker-compose
+- Docker
+- Docker Compose
 
 ## First setup
 
 ```bash
+# Start Docker containers
 composer start
+
+# Connect to the app container
 composer connect
-composer install # in the container
+
+Inside container: install dependencies
+composer install
 ```
 
 ## Commands
 
 ### app:currency:convert
 
-Convert one currency value into another one.
+Convert values between currencies.
 
-`php bin/console app:currency:convert`
+`php bin/console app:currency:convert [--from-currency=FROM] [--to-currency=TO] AMOUNT`
 
 ##### Options:
 
-- `--from-currency` - `string`
-- `--to-currency` - `string`
+- `--from-currency`: Source currency code (required)
+- `--to-currency`: Target currency code (required)
 
 ##### Arguments:
 
-- `amount` - `float`
+- `amount`: Value to convert (float, required)
 
 ##### Examples:
 
@@ -160,15 +171,19 @@ Result:
 }
 ```
 
-#### app:currency:convert
+#### app:rate:show
 
-Shows rates for one currency.
+Display exchange rates relative to a base currency.
 
-`php bin/console app:rate:show`
+`php bin/console app:rate:show [--currency=BASE]`
 
 ##### Options:
 
-- `--currency` - `string`
+- `--currency`: Base currency code (default: USD)
+
+##### Output:
+
+Array of currencies showing how much 1 base unit equals in target currency.
 
 ##### Examples:
 
@@ -182,17 +197,15 @@ Result:
 
 ```json
 [
-    // ...
     {
         "code": "BTC",
         "rate": 8.506487132151851e-6
     },
-    // ...
     {
         "code": "BYN",
         "rate": 3.2725656852923
     },
-    // ...
+    ...
 ]
 ```
 
@@ -208,7 +221,7 @@ php bin/console app:rate:show --currency=BTC
         "code": "ETH",
         "rate": 39.98400639744102
     },
-    // ...
+    ...
 ]
 ```
 
@@ -226,23 +239,72 @@ Result:
         "code": "BTC",
         "rate": 1.0015756788579794e-5
     },
-    // ...
     {
         "code": "USD",
         "rate": 1.1683717948535
     },
-    // ...
     {
         "code": "BYN",
         "rate": 3.8235734435008
     },
+    ...
 ]
 ```
 
-##### Known issues:
-
-- If we want to see all prepared rates for all possible quotes from Coinpaprika, we need to provide all possible quotes, for example ?quotes=EUR,USD,... - I haven't tried this, so it's not a good idea.
-
 ## Cache
 
-Responses from APIs are cached for 1 hour. `php bin/console cache:chear` can be used to clear this cache.
+- API responses cached for 1 hour
+- Clear cache with: `php bin/console cache:clear`
+
+## Known issues:
+
+### Issue 1
+
+When running `php bin/console app:rate:show --currency=BTC`, you won't see a USD (and some other) rate \
+due to how the Coinpaprika API processes quotes:
+
+1. **API Request Structure**:
+
+```
+# Our request to Coinpaprika
+https://api.coinpaprika.com/v1/exchanges/coinbase/markets?quotes=BTC
+```
+
+2. **The Quote Paradox**:
+
+- The `?quotes=BTC` parameter means: *"Show values of all base currencies in BTC"*
+- For the BTC/USD pair:
+    - Base currency = BTC
+    - Quote currency = USD
+- But we're requesting BTC quotes, so we get:
+
+```json
+{
+  "quotes": {
+    "BTC": {
+      "price": 1.00030  // 1 BTC = ~1 BTC
+    }
+  }
+}
+```
+
+3. **Why USD Disappears**:
+
+- The API only returns the *specified quote currency* (BTC)
+- USD isn't included because:
+    - It's the quote currency in BTC/USD pair
+    - We didn't request USD quote
+
+4. **The Core Limitation**:
+
+To see USD (and other) rates when BTC is the base currency, we would need to:
+- Request multiple quotes: `?quotes=BTC,USD`
+- Calculate inverse rates where needed
+
+**Workaround**:  
+
+To see BTC <-> USD rates, query from USD perspective:
+
+```bash
+php bin/console app:rate:show --currency=USD | grep BTC
+```

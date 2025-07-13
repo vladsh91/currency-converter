@@ -11,12 +11,11 @@ final readonly class Currency
     private function __construct(
         public string $value,
     ) {
+        Assert::that($value)->notEmpty('Currency value can\'t be empty.');
     }
 
     public static function fromString(string $value): self
     {
-        Assert::that($value)->notEmpty();
-
         return new Currency(\strtoupper($value));
     }
 

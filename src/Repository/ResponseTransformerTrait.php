@@ -15,7 +15,7 @@ trait ResponseTransformerTrait
      *
      * @return T[]
      */
-    private function transformIntoDtoAll(mixed $data, string $className): mixed
+    private function transformIntoDtoAll(mixed $data, string $className): array
     {
         $results = (new MapperBuilder())
             ->allowSuperfluousKeys()

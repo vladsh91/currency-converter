@@ -6,9 +6,9 @@ framework:
     http_client:
         scoped_clients:
             coinpaprika.client:
-                base_uri: '%env(COINPAPRIKA_BASE_URL)%'
+                base_uri: '%env(string:COINPAPRIKA_BASE_URL)%'
             floatrates.client:
-                base_uri: '%env(FLOATRATES_BASE_URL)%'
+                base_uri: '%env(string:FLOATRATES_BASE_URL)%'
 
 when@test:
     framework:
